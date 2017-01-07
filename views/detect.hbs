@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>PDF to SVG</title>
+		<link rel='stylesheet' href='/css/style.css' />
+		<script src="/socket.io/socket.io.js"></script>
+		<script type="text/javascript">
+			var script = document.createElement('script');
+			script.defer = true;
+			script.src = '/js/main.js?' + new Date().getTime();
+			document.getElementsByTagName('head')[0].appendChild(script);
+		</script>
+	</head>
+	<body>
+		<div class="wrapper">
+			<h1>Детектировать в PDF</h1>
+			<p>Перетащите сюда PDF</p>
+			<p class="back"><a href="/detect">Повторить загрузку</a></p>
+			<p class="back"><a href="/">Вернуться на главную</a></p>
+			<p class="response"></p>
+
+			<div class="upload">
+				<form action="/detectPdf" method="post" enctype="multipart/form-data">
+					<input type="file" name='pdf' accept=".pdf" />
+				</form>
+			</div>
+		</div>
+
+		<div class="drop">Загрузить файл</div>
+	</body>
+</html>
