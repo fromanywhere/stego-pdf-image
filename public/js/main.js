@@ -53,29 +53,21 @@
 		} else {
 			var formData = new FormData();
 			var xhr = new XMLHttpRequest();
-			var palette = document.querySelector('[name="palette"]');
 			var uploadTarget = document.querySelector('form').getAttribute('action');
 
 			formData.append('socketCookie', socketCookie.id);
-			palette && formData.append('palette', palette.checked);
 
 			formData.append(fileName, uploadButton.files[0], uploadButton.files[0].name);
 
 			xhr.open("POST", uploadTarget);
 			xhr.onreadystatechange = function() {
 				if (this.readyState != 4) return;
-
-				//responseHTML.innerHTML = '<a href="' + this.responseText + '" download>Скачать</a>';
-
 				responseHTML.innerHTML = this.responseText;
-
 				form.style.display = 'none';
 				document.querySelector('body').classList.remove('__loading');
 			}
 
 			xhr.send(formData);
-			p.innerHTML = 'Загрузка файла...';
-			document.querySelector('body').classList.add('__loading');
 		}
 	})
 })();

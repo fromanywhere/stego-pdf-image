@@ -5,7 +5,7 @@ var cp = require('child_process');
 var extend = require('xtend');
 var path = require('path');
 
-//var detectSimilarSymbols = require('../pdf/detectSimilarSymbols');
+var detectSimilarSymbols = require('../pdf/detectSimilarSymbols');
 var notification = require('../notification');
 var syncProcess = require('../syncProcess');
 
@@ -51,7 +51,7 @@ function extractImages(params) {
 			// 1) Прочитать svg
 			var currentSVGfile = params.svg[svgNum-1];
 			fs.readFile(params.targetPath + currentSVGfile, {encoding: 'utf8'}, function (err, currentSVGfileText) {
-
+				console.log(err);
 				// 2) Распарсить svg images
 				var $ = cheerio.load(currentSVGfileText, {
 					xmlMode: true
@@ -83,7 +83,7 @@ function extractImages(params) {
 					$paths.each(function () {
 						symbolsArray.push({
 							path: $(this).attr('d'),
-							isModified: false //!!($(this).attr('style').indexOf('fill:rgb(100%,0%,0%)') + 1)
+							isModified: false
 						});
 					})
 

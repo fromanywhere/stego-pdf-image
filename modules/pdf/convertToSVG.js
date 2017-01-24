@@ -1,5 +1,6 @@
 var Promise = require('es6-promise').Promise;
 var path = require('path');
+var fs = require('fs');
 
 var notification = require('../notification');
 var cmdExec = require('../cmdExec');
@@ -11,19 +12,25 @@ function convertToSVG(params) {
 
 	return new Promise(function (resolve, reject) {
 		var shortName = path.basename(params.name, '.pdf');
-		var convert = new cmdExec('pdf2svg ' + shortName + '.pdf ' + shortName + '_%d.svg all', {
-				cwd: params.targetPath
-			},
-			function () {
-				var svgFiles = new cmdExec("find *.svg | sort -t '_' -k 2n", {
+		let filePath = path.resolve(params.targetPath, params.name);
+
+		fs.stat(params.targetPath, () => {
+			let cmd = 'pdf2svg ' + shortName + '.pdf ' + shortName + '_%d.svg all';
+
+			cmdExec(cmd, {
 					cwd: params.targetPath
-				},
-				function (stdout) {
-					notification.log("PDF декодирован за " + (Date.now() - startTime)/1000 + "с. Запуск извлечения изображений...");
-					resolve(stdout.toString().trim().split('\n'));
 				})
-			}
-		);
+				.then (() => {
+					return cmdExec("find *.svg | sort -t '_' -k 2n", {
+					cwd: params.targetPath
+					})
+					.then ((stdout) => {
+						notification.log("PDF декодирован за " + (Date.now() - startTime)/1000 + "с. Запуск извлечения изображений...");
+						resolve (stdout.toString().trim().split('\n'));
+					})
+				});
+		})
+
 	})
 }
 

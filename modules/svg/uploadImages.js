@@ -9,6 +9,7 @@ function uploadImages(params) {
 	notification.init(params.socketId);
 
 	return new Promise(function (resolve, reject) {
+
 		var fileProp = params.files['zip'];
 
 		if (!fileProp.name) {

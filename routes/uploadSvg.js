@@ -38,7 +38,6 @@ router.post('/', function(req, res) {
 			svgProcessThreadsNum: SVG_PROCESS_THREADS_NUM,
 			cheerioProcessThreadsNum: CHEERIO_PROCESS_THREADS_NUM,
 			generateCompressedPdf: GENERATE_COMPRESSED_PDF,
-			usePalette: fields.palette || 'false',
 			socketId: fields.socketCookie
 		});
 
