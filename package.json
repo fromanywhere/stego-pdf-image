@@ -2,6 +2,11 @@
   "name": "stego-pdf",
   "version": "0.0.0",
   "private": true,
+
+  "scripts": {
+    "start": "node app.js"
+  },
+
   "dependencies": {
     "body-parser": "~1.8.1",
     "canvas": "^1.2.2",

@@ -23,8 +23,8 @@ function uploadImages(params) {
 				});
 			}
 
-				fs.exists(params.targetPath, function (exist) {
-					if (!exist) {
+				fs.stat(params.targetPath, function (err, stats) {
+					if (err) {
 						fs.mkdir(params.targetPath, function () {
 							rename();
 						});

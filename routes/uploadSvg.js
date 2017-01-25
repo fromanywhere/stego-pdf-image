@@ -25,6 +25,8 @@ router.post('/', function(req, res) {
 
     form.parse(req, function(err, fields, files) {
 
+		if (err) console.log(err);
+
 		var name = files['zip'].name;
 		var absolutePath = '/uploads/' + name + '_' + Date.now() + '/';
 		var targetPath = appRoot + '/public' + absolutePath;

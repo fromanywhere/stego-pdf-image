@@ -5,9 +5,9 @@ var cp = require('child_process');
 var extend = require('xtend');
 var path = require('path');
 
-var detectSimilarSymbols = require('../pdf/detectSimilarSymbols');
 var notification = require('../notification');
 var syncProcess = require('../syncProcess');
+var protectImages = require('../protectImages')
 
 function extractImages(params) {
 	var startTime = Date.now();
@@ -35,7 +35,7 @@ function extractImages(params) {
 			writeFlag(currentSvgNum, function() {
 				notification.log("Извлечение изображений... " + ((filesProcessed.length/(params.svg.length))*100).toFixed(2) + "%");
 			}, function () {
-				notification.log("Изображения извлечены за " + (Date.now() - startTime)/1000 + "c. Запуск создания палитры...");
+				notification.log("Изображения извлечены за " + (Date.now() - startTime)/1000);
 			});
 		}
 
@@ -51,7 +51,9 @@ function extractImages(params) {
 			// 1) Прочитать svg
 			var currentSVGfile = params.svg[svgNum-1];
 			fs.readFile(params.targetPath + currentSVGfile, {encoding: 'utf8'}, function (err, currentSVGfileText) {
-				console.log(err);
+
+				if (err) console.log(err);
+
 				// 2) Распарсить svg images
 				var $ = cheerio.load(currentSVGfileText, {
 					xmlMode: true
@@ -59,13 +61,17 @@ function extractImages(params) {
 
 				// 3) Извлечь base64-encoded
 				var imageId = 0;
+				var re = /^data:image\/png;base64,/;
+
 				$('image').each(function () {
 					imageId++;
 					var string = $(this).attr('xlink:href');
 
 					if (string && string.indexOf('data:image/png;base64') !== -1) {
-						fs.writeFileSync(params.targetPath + 'svg_' + svgNum + '_' + imageId + '.png', string.replace(/^data:image\/png;base64,/, ""), 'base64');
-						$(this).attr('xlink:href', 'svg_' + svgNum + '_' + imageId + '.png');
+						const buffer = Buffer.from(string.replace(re, ""), 'base64');
+						var encodedImage = buffer.toString('utf8');
+						
+						protectImages(encodedImage);
 					}
 
 					if (string && string.indexOf('data:image/jpeg;base64') !== -1) {
@@ -73,41 +79,6 @@ function extractImages(params) {
 						$(this).attr('xlink:href', 'svg_' + svgNum + '_' + imageId + '.jpeg');
 					}
 				});
-
-				var $symbols = $('svg > defs > g');
-				var $paths = $('svg > g > path');
-				if (!$symbols.find('symbol').length && $paths.length) {
-					var child = cp.fork(global.appRoot + '/modules/pdf/detectSimilarSymbols.js');
-					var symbolsArray = [];
-
-					$paths.each(function () {
-						symbolsArray.push({
-							path: $(this).attr('d'),
-							isModified: false
-						});
-					})
-
-					child.on('message', function(usedSymbols) {
-						symbols = symbols.concat(usedSymbols);
-						child.kill();
-
-					  	writeDetectFlag(svgNum, {similar: symbols});
-					  	callback();
-					});
-
-					child.send({
-						symbolsArray: symbolsArray,
-						svgNum: svgNum,
-						params: params
-					});
-				} else {
-
-					// 4) Сохранить новый svg
-					fs.writeFile(params.targetPath + shortName + '_'+ svgNum + '.svg', $.html(), function () {
-						writeFileFlag(svgNum);
-						callback();
-					});
-				}
 			});
 		}
 

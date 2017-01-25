@@ -12,10 +12,10 @@ function convertToSVG(params) {
 
 	return new Promise(function (resolve, reject) {
 		var shortName = path.basename(params.name, '.pdf');
-		let filePath = path.resolve(params.targetPath, params.name);
+		var filePath = path.resolve(params.targetPath, params.name);
 
 		fs.stat(params.targetPath, () => {
-			let cmd = 'pdf2svg ' + shortName + '.pdf ' + shortName + '_%d.svg all';
+			var cmd = 'pdf2svg ' + shortName + '.pdf ' + shortName + '_%d.svg all';
 
 			cmdExec(cmd, {
 					cwd: params.targetPath

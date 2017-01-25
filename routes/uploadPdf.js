@@ -4,9 +4,6 @@ var formidable = require('formidable');
 var extend = require('xtend');
 
 var notification = require('../modules/notification');
-
-var packFiles = require('../modules/pdf/packFiles');
-var generateJSON = require('../modules/pdf/generateJSON');
 var convertToSVG = require('../modules/pdf/convertToSVG');
 var uploadImages = require('../modules/pdf/uploadImages');
 var extractImages = require('../modules/pdf/extractImages');
