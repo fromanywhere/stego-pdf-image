@@ -4,6 +4,7 @@ var Promise = require('es6-promise').Promise;
 var notification = require('../notification');
 
 function uploadImages(params) {
+
 	var startTime = Date.now();
 
 	notification.init(params.socketId);
@@ -22,14 +23,14 @@ function uploadImages(params) {
 				});
 			}
 
-			fs.exists(params.targetPath, function (exist) {
-				if (!exist) {
-					fs.mkdir(params.targetPath, function () {
+				fs.stat(params.targetPath, function (err, stats) {
+					if (err) {
+						fs.mkdir(params.targetPath, function () {
+							rename();
+						});
+					} else {
 						rename();
-					});
-				} else {
-					rename();
-				}
+					}
 			})
 		}
 	})

@@ -25,6 +25,8 @@ router.post('/', function(req, res) {
 
     form.parse(req, function(err, fields, files) {
 
+		if (err) console.log(err);
+
 		var name = files['zip'].name;
 		var absolutePath = '/uploads/' + name + '_' + Date.now() + '/';
 		var targetPath = appRoot + '/public' + absolutePath;
@@ -38,7 +40,6 @@ router.post('/', function(req, res) {
 			svgProcessThreadsNum: SVG_PROCESS_THREADS_NUM,
 			cheerioProcessThreadsNum: CHEERIO_PROCESS_THREADS_NUM,
 			generateCompressedPdf: GENERATE_COMPRESSED_PDF,
-			usePalette: fields.palette || 'false',
 			socketId: fields.socketCookie
 		});
 

@@ -1,16 +1,18 @@
 var spawn = require('child_process').exec;
+var Promise = require('es6-promise').Promise;
 
-function cmdExec(cmd, args, cb) {
+function cmdExec(cmd, args) {
 	var child = spawn(cmd, args);
 	var stdout = '';
 
-	child.stdout.on('data', function (data) {
-		stdout += data;
+	return new Promise(function (resolve, reject) {
+		child.stdout.on('data', function (data) {
+			stdout += data;
+		});
+		child.stdout.on('end', function () {
+			resolve(stdout);
+		});
 	});
-
-	child.stdout.on('end', function () {
-		cb(stdout)
-	});
-}
+};
 
 module.exports = cmdExec;
