@@ -8,7 +8,7 @@
 	var p = document.querySelector('p');
 	var responseHTML = document.querySelector('.response');
 
-	var socket = io(':8000');
+	var socket = io(':8080');
 	var socketCookie = null;
 
 	socket.on('connect', function (a) {

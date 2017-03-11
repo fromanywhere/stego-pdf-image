@@ -11,7 +11,7 @@ var protectImages = require('../protectImages')
 
 function extractImages(params) {
 	var startTime = Date.now();
-
+	//console.log(params);
 	notification.init(params.socketId);
 
 	return new Promise(function (resolve, reject) {
@@ -19,67 +19,51 @@ function extractImages(params) {
 		var filesProcessed = [];
 		var shortName = path.basename(params.name, '.pdf');
 
-		function writeFlag (currentSvgNum, logFunction, completeLogFunction, resolveData) {
-			if (filesProcessed.indexOf(currentSvgNum) === -1) {
-				filesProcessed.push(currentSvgNum);
-			}
-			logFunction();
-
-			if (filesProcessed.length === params.svg.length) {
-				resolve(resolveData);
-				completeLogFunction();
-			}
-		}
-
-		function writeFileFlag(currentSvgNum) {
-			writeFlag(currentSvgNum, function() {
-				notification.log("Извлечение изображений... " + ((filesProcessed.length/(params.svg.length))*100).toFixed(2) + "%");
-			}, function () {
-				notification.log("Изображения извлечены за " + (Date.now() - startTime)/1000);
-			});
-		}
-
-		function writeDetectFlag(currentSvgNum, resolveData) {
-			writeFlag(currentSvgNum, function() {
-				notification.log("Поиск факта внедрения... " + ((filesProcessed.length/(params.svg.length))*100).toFixed(2) + "%");
-			}, function () {
-				notification.log("Поиск завершен за " + (Date.now() - startTime)/1000 + "c.");
-			}, resolveData);
-		}
 
 		function processSvgFile(svgNum, callback) {
 			// 1) Прочитать svg
-			var currentSVGfile = params.svg[svgNum-1];
-			fs.readFile(params.targetPath + currentSVGfile, {encoding: 'utf8'}, function (err, currentSVGfileText) {
+			//console.log(svgNum, 'svgNum');
+			svgNum = 0;
 
-				if (err) console.log(err);
+			for (var i = 0; i < params.svg.length; i++) {
+				fs.readFile(params.targetPath + params.svg[i], {encoding: 'utf8'}, (err, currentSVGfileText) => {
 
-				// 2) Распарсить svg images
-				var $ = cheerio.load(currentSVGfileText, {
-					xmlMode: true
+					if (err) console.log(err);
+					++svgNum;
+
+					// 2) Распарсить svg images
+					var $ = cheerio.load(currentSVGfileText, {
+						xmlMode: true
+					});
+
+					// 3) Извлечь base64-encoded
+					var imageId = 0,
+					 		re = /^data:image\/png;base64,/,
+							encodedImage,
+							format;
+					var p = 0,
+							j = 0;
+					$('image').each(function() {
+						++imageId;
+						var string = $(this).attr('xlink:href');
+
+						if (string && string.indexOf('data:image/jpeg;base64') !== -1) {
+							console.log(imageId, svgNum); //ПОКА ВСТРАИВАТЬ В PNG
+						}
+
+						if (string && string.indexOf('data:image/png;base64') !== -1) {
+							console.log(imageId, svgNum);
+
+							const buffer = Buffer.from(string.replace(re, ""), 'base64');
+							encodedImage = buffer.toString('utf8');
+							format = 'png';
+
+							protectImages($(this).attr('xlink:href', imageId + '.png'), string, imageId, svgNum);
+						}
+					});
 				});
+			}
 
-				// 3) Извлечь base64-encoded
-				var imageId = 0;
-				var re = /^data:image\/png;base64,/;
-
-				$('image').each(function () {
-					imageId++;
-					var string = $(this).attr('xlink:href');
-
-					if (string && string.indexOf('data:image/png;base64') !== -1) {
-						const buffer = Buffer.from(string.replace(re, ""), 'base64');
-						var encodedImage = buffer.toString('utf8');
-						
-						protectImages(encodedImage);
-					}
-
-					if (string && string.indexOf('data:image/jpeg;base64') !== -1) {
-						fs.writeFileSync(params.targetPath + 'svg_' + svgNum + '_' + imageId + '.jpeg', string.replace(/^data:image\/jpeg;base64,/, ""), 'base64');
-						$(this).attr('xlink:href', 'svg_' + svgNum + '_' + imageId + '.jpeg');
-					}
-				});
-			});
 		}
 
 		syncProcess(processSvgFile, params.cheerioProcessThreadsNum, 1, params.svg.length+1);
