@@ -9,7 +9,6 @@ var Image = Canvas.Image,
 
 function transformMessage() {
   var messageSrc = appRoot + '/matlab/message.png';
-  var message = fs.readFileSync(messageSrc);
   var imageM = new Image();
   imageM.src = messageSrc;
   var widthM = +imageM.width,
@@ -100,14 +99,17 @@ function protectImages(img, string, imageId, svgNum) {
     console.log(arrBlue8.length);
 
     //embedding the message into the channels
-    var numberOfString = 1;
+    var numberOfString = 1, j = 0;
+
     for (var i = 0; i < binaryMessage.length; i++) {
-      if (i = width * (numberOfString - 1) + resultOfTransformMessage.widthM) {
-        
+      if (j === (width * (numberOfString - 1) + resultOfTransformMessage.widthM)) {
+        numberOfString++;
+        j += (width - resultOfTransformMessage.widthM);
       }
-      arrRed8[i] = binaryMessage[i] ^ arrRed8[i];
-      arrGreen8[i] = binaryMessage[i] ^ arrGreen8[i];
-      arrBlue8[i] = binaryMessage[i] ^ arrBlue8[i];
+      arrRed8[j] = binaryMessage[i] ^ arrRed8[j];
+      arrGreen8[j] = binaryMessage[i] ^ arrGreen8[j];
+      arrBlue8[j] = binaryMessage[i] ^ arrBlue8[j];
+      j++;
     }
 
     //replace 8th plane in red channel to protected
