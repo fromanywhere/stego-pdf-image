@@ -1,71 +1,87 @@
-var fs = require('fs');
-var Promise = require('es6-promise').Promise;
-var cheerio = require('cheerio');
-var cp = require('child_process');
-var extend = require('xtend');
-var path = require('path');
+const fs = require('fs');
+const Promise = require('es6-promise').Promise;
+const cheerio = require('cheerio');
+const path = require('path');
 
-var notification = require('../notification');
-var syncProcess = require('../syncProcess');
-var protectImages = require('../protectImages')
+const notification = require('../notification');
+const syncProcess = require('../syncProcess');
+const protectImages = require('../protectImages');
+
 
 function extractImages(params) {
-	var startTime = Date.now();
-	//console.log(params);
+  const startTime = Date.now();
 	notification.init(params.socketId);
 
 	return new Promise(function (resolve, reject) {
-		var symbols = [];
-		var filesProcessed = [];
-		var shortName = path.basename(params.name, '.pdf');
 
+    let filesProcessed = [];
+    let shortName = path.basename(params.name, '.pdf');
+
+    function writeFlag (currentSvgNum, logFunction, completeLogFunction, resolveData) {
+      if (filesProcessed.indexOf(currentSvgNum) === -1) {
+        filesProcessed.push(currentSvgNum);
+      }
+      logFunction();
+
+      if (filesProcessed.length === params.svg.length) {
+        resolve(resolveData);
+        completeLogFunction();
+      }
+    }
+
+    function writeFileFlag(currentSvgNum) {
+      writeFlag(currentSvgNum, function() {
+        notification.log("Извлечение изображений... " + ((filesProcessed.length/(params.svg.length))*100).toFixed(2) + "%");
+      }, function () {
+        notification.log("Изображения извлечены за " + (Date.now() - startTime)/1000);
+      });
+    }
 
 		function processSvgFile(svgNum, callback) {
 			// 1) Прочитать svg
-			//console.log(svgNum, 'svgNum');
-			svgNum = 0;
-
-			for (var i = 0; i < params.svg.length; i++) {
-				fs.readFile(params.targetPath + params.svg[i], {encoding: 'utf8'}, (err, currentSVGfileText) => {
+			let protectedImgNum = 0;
+      let currentSVGfile = params.svg[svgNum-1];
+      fs.readFile(params.targetPath + currentSVGfile, {encoding: 'utf8'}, (err, currentSVGfileText) => {
 
 					if (err) console.log(err);
-					++svgNum;
 
 					// 2) Распарсить svg images
-					var $ = cheerio.load(currentSVGfileText, {
+					let $ = cheerio.load(currentSVGfileText, {
 						xmlMode: true
 					});
 
 					// 3) Извлечь base64-encoded
-					var imageId = 0,
+					let imageId = 0,
 					 		re = /^data:image\/png;base64,/,
-							encodedImage,
-							format;
-					var p = 0,
-							j = 0;
+							encodedImage;
+
 					$('image').each(function() {
 						++imageId;
-						var string = $(this).attr('xlink:href');
+						let string = $(this).attr('xlink:href');
 
 						if (string && string.indexOf('data:image/jpeg;base64') !== -1) {
-							console.log(imageId, svgNum); //ПОКА ВСТРАИВАТЬ В PNG
+						  //working with jpg will be later
 						}
 
 						if (string && string.indexOf('data:image/png;base64') !== -1) {
-							console.log(imageId, svgNum);
 
 							const buffer = Buffer.from(string.replace(re, ""), 'base64');
 							encodedImage = buffer.toString('utf8');
-							format = 'png';
 
-							protectImages($(this).attr('xlink:href', imageId + '.png'), string, imageId, svgNum);
-						}
-					});
-				});
-			}
+              ++protectedImgNum;
+              let protectedImg = protectImages(string, $(this).attr('width'), $(this).attr('height'));
+              $(this).attr('xlink:href', protectedImg);
+            }
+          });
 
-		}
+          // 4) Сохранить новый svg
+          fs.writeFile(params.targetPath + shortName + '_'+ svgNum + '.svg', $.html(), function () {
+            writeFileFlag(svgNum);
+            callback();
+          });
 
+        });
+    }
 		syncProcess(processSvgFile, params.cheerioProcessThreadsNum, 1, params.svg.length+1);
 	});
 }
