@@ -1,13 +1,10 @@
-const fs = require('fs');
-const Promise = require('es6-promise').Promise;
-const pdf2svg = require('../routes/pdf2svg');
-const sizeOf = require('image-size');
 const Canvas = require('canvas');
 const Image = Canvas.Image;
 
 const transformMessage = require('./transformMessage');
+const extractWTM = require('./extractWTM');
 
-function protectImages(imageSrc, imageWidth, imageHeight) {
+function protectImages(imageSrc, imageWidth, imageHeight, params) {
 
   let image = new Image();
   image.src = imageSrc;
@@ -16,7 +13,6 @@ function protectImages(imageSrc, imageWidth, imageHeight) {
       canvas = new Canvas(width, height),
       imageData, ctx,
       arrRed = [], arrGreen = [], arrBlue = [],
-      arrRed8 = [], arrGreen8 = [], arrBlue8 = [],
       binaryMessage, resultOfTransformMessage;
 
   ctx = canvas.getContext('2d');
@@ -28,36 +24,32 @@ function protectImages(imageSrc, imageWidth, imageHeight) {
 
   //exrtract channels
   for (let i = 0; i < imageData.data.length; i+=4) {
-    arrRed.push(('00000000' + imageData.data[i].toString(2)).slice(-8));
-    arrGreen.push(('00000000' + imageData.data[i + 1].toString(2)).slice(-8));
-    arrBlue.push(('00000000' + imageData.data[i + 2].toString(2)).slice(-8));
+    arrRed.push(imageData.data[i]);
+    arrGreen.push(imageData.data[i + 1]);
+    arrBlue.push(imageData.data[i + 2]);
   }
 
   let channelLength = arrRed.length;
+  const mask = 1 << 7;
 
-    //extract 8th bit plane and copy its to first plane in a red channel
-    for (let i = 0; i < channelLength; i++) {
-      let arr = arrRed[i].split('');
-      arr[7] = arr[0];
-      arrRed8.push(arr[0]);
-      arrRed[i] = arr.join('');
-    }
 
-    //extract 8th bit plane and copy its to first plane in a green channel
-    for (let i = 0; i < channelLength; i++) {
-      let arr = arrGreen[i].split('');
-      arr[7] = arr[0];
-      arrGreen8.push(arr[0]);
-      arrGreen[i] = arr.join('');
-    }
+    //extract 8th bit plane and copy its to first plane in the channels
+  for (let i = 0; i < channelLength; i++) {
+    let firstRedBitValue = (arrRed[i] & mask) >>> 7;
+    let changedLastRedBit = arrRed[i] & ((1 << 8) - 2);
 
-    //extract 8th bit plane and copy its to first plane in a blue channel
-    for (let i = 0; i < channelLength; i++) {
-      let arr = arrBlue[i].split('');
-      arr[7] = arr[0];
-      arrBlue8.push(arr[0]);
-      arrBlue[i] = arr.join('');
-    }
+    arrRed[i] = changedLastRedBit ^ firstRedBitValue;
+
+    let firstGreenBitValue = (arrGreen[i] & mask) >>> 7;
+    let changedLastGreenBit = arrGreen[i] & ((1 << 8) - 2);
+
+    arrGreen[i] = changedLastGreenBit ^ firstGreenBitValue;
+
+    let firstBlueBitValue = (arrBlue[i] & mask) >>> 7;
+    let changedLastBlueBit = arrBlue[i] & ((1 << 8) - 2);
+
+    arrBlue[i] = changedLastBlueBit ^ firstBlueBitValue;
+  }
 
     //embedding the message into the channels
     let numberOfString = 1, j = 0;
@@ -67,42 +59,31 @@ function protectImages(imageSrc, imageWidth, imageHeight) {
         numberOfString++;
         j += (width - resultOfTransformMessage.width);
       }
-      arrRed8[j] = binaryMessage[i] ^ arrRed8[j];
-      arrGreen8[j] = binaryMessage[i] ^ arrGreen8[j];
-      arrBlue8[j] = binaryMessage[i] ^ arrBlue8[j];
+
+      let firstRedBitValue = arrRed[j] & mask;
+      arrRed[j] = arrRed[j] ^ ((binaryMessage[i] << 7) ^ firstRedBitValue);
+
+      let firstGreenBitValue = arrGreen[j] & mask;
+      arrGreen[j] = arrGreen[j] ^ ((binaryMessage[i] << 7) ^ firstGreenBitValue);
+
+      let firstBlueBitValue = arrBlue[j] & mask;
+      arrBlue[j] = arrBlue[j] ^ ((binaryMessage[i] << 7) ^ firstBlueBitValue);
+
       j++;
     }
 
-    //replace 8th plane in red channel to protected
-    for (let i = 0; i < arrRed.length; i++) {
-      let arr = arrRed[i].split('');
-      arr[0] = arrRed8[i];
-      arrRed[i] = arr.join('');
-
-    }
-
-    //replace 8th plane in green channel to protected
-    for (let i = 0; i < arrGreen.length; i++) {
-      let arr = arrGreen[i].split('');
-      arr[0] = arrGreen8[i];
-      arrGreen[i] = arr.join('');
-    }
-
-    //replace 8th plane in blue channel to protected
-    for (let i = 0; i < arrBlue.length; i++) {
-      let arr = arrBlue[i].split('');
-      arr[0] = arrBlue8[i];
-      arrBlue[i] = arr.join('');
-    }
 
     for (let i = 0; i < channelLength; i++) {
-        imageData.data[i * 4] = parseInt(arrRed[i], 2);
-        imageData.data[i * 4 + 1] = parseInt(arrGreen[i], 2);
-        imageData.data[i * 4 + 2] = parseInt(arrBlue[i], 2);
+        imageData.data[i * 4] = arrRed[i];
+        imageData.data[i * 4 + 1] = arrGreen[i];
+        imageData.data[i * 4 + 2] = arrBlue[i];
     }
 
     ctx.putImageData(imageData, 0, 0);
     let newImg  = canvas.toDataURL();
+
+    extractWTM(newImg, imageWidth, imageHeight, binaryMessage.length, resultOfTransformMessage.width, params);
+
     return newImg;
 
 }

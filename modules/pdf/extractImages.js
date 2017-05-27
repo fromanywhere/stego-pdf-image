@@ -60,16 +60,20 @@ function extractImages(params) {
 						let string = $(this).attr('xlink:href');
 
 						if (string && string.indexOf('data:image/jpeg;base64') !== -1) {
-						  //working with jpg will be later
+              const buffer = Buffer.from(string.replace(re, ""), 'base64');
+              encodedImage = buffer.toString('utf8');
+
+              ++protectedImgNum;
+              let protectedImg = protectImages(string, $(this).attr('width'), $(this).attr('height'), params);
+              $(this).attr('xlink:href', protectedImg);
 						}
 
 						if (string && string.indexOf('data:image/png;base64') !== -1) {
-
 							const buffer = Buffer.from(string.replace(re, ""), 'base64');
 							encodedImage = buffer.toString('utf8');
 
               ++protectedImgNum;
-              let protectedImg = protectImages(string, $(this).attr('width'), $(this).attr('height'));
+              let protectedImg = protectImages(string, $(this).attr('width'), $(this).attr('height'), params);
               $(this).attr('xlink:href', protectedImg);
             }
           });
