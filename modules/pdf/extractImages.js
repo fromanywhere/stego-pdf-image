@@ -6,14 +6,16 @@ const path = require('path');
 const notification = require('../notification');
 const syncProcess = require('../syncProcess');
 const protectImages = require('../protectImages');
+const extractWTM = require('../extractWTM');
+const transformMessage = require('../transformMessage');
 
 
-function extractImages(params) {
+
+function extractImages(params, flag) {
   const startTime = Date.now();
 	notification.init(params.socketId);
 
-	return new Promise(function (resolve, reject) {
-
+	return new Promise((resolve, reject) => {
     let filesProcessed = [];
     let shortName = path.basename(params.name, '.pdf');
 
@@ -30,7 +32,7 @@ function extractImages(params) {
     }
 
     function writeFileFlag(currentSvgNum) {
-      writeFlag(currentSvgNum, function() {
+      writeFlag(currentSvgNum, () => {
         notification.log("Извлечение изображений... " + ((filesProcessed.length/(params.svg.length))*100).toFixed(2) + "%");
       }, function () {
         notification.log("Изображения извлечены за " + (Date.now() - startTime)/1000);
@@ -39,7 +41,6 @@ function extractImages(params) {
 
 		function processSvgFile(svgNum, callback) {
 			// 1) Прочитать svg
-			let protectedImgNum = 0;
       let currentSVGfile = params.svg[svgNum-1];
       fs.readFile(params.targetPath + currentSVGfile, {encoding: 'utf8'}, (err, currentSVGfileText) => {
 
@@ -51,35 +52,40 @@ function extractImages(params) {
 					});
 
 					// 3) Извлечь base64-encoded
-					let imageId = 0,
-					 		re = /^data:image\/png;base64,/,
+					let re = /^data:image\/png;base64,/,
 							encodedImage;
 
-					$('image').each(function() {
-						++imageId;
-						let string = $(this).attr('xlink:href');
+					if (flag === 'protect') {
+            let resultOfTransformMessage = transformMessage();
 
-						if (string && string.indexOf('data:image/jpeg;base64') !== -1) {
-              const buffer = Buffer.from(string.replace(re, ""), 'base64');
-              encodedImage = buffer.toString('utf8');
+            $('image').each(function() {
+              let string = $(this).attr('xlink:href');
 
-              ++protectedImgNum;
-              let protectedImg = protectImages(string, $(this).attr('width'), $(this).attr('height'), params);
-              $(this).attr('xlink:href', protectedImg);
-						}
+              if (string && ((string.indexOf('data:image/jpeg;base64') !== -1 || string.indexOf('data:image/png;base64')) !== -1)) {
+                const buffer = Buffer.from(string.replace(re, ""), 'base64');
+                encodedImage = buffer.toString('utf8');
 
-						if (string && string.indexOf('data:image/png;base64') !== -1) {
-							const buffer = Buffer.from(string.replace(re, ""), 'base64');
-							encodedImage = buffer.toString('utf8');
+                let protectedImg = protectImages(string, $(this).attr('width'), $(this).attr('height'), resultOfTransformMessage, params);
+                $(this).attr('xlink:href', protectedImg);
+              }
+            });
+          } else if (flag === 'detect') {
+            $('image').each(function() {
+              let string = $(this).attr('xlink:href');
 
-              ++protectedImgNum;
-              let protectedImg = protectImages(string, $(this).attr('width'), $(this).attr('height'), params);
-              $(this).attr('xlink:href', protectedImg);
-            }
-          });
+              if (string && ((string.indexOf('data:image/jpeg;base64') !== -1 || string.indexOf('data:image/png;base64')) !== -1)) {
+                const buffer = Buffer.from(string.replace(re, ""), 'base64');
+                encodedImage = buffer.toString('utf8');
 
-          // 4) Сохранить новый svg
-          fs.writeFile(params.targetPath + shortName + '_'+ svgNum + '.svg', $.html(), function () {
+                let refreshedImg = extractWTM(string, $(this).attr('width'), $(this).attr('height'), params);
+                $(this).attr('xlink:href', refreshedImg);
+              }
+            });
+          }
+
+
+
+          fs.writeFile(params.targetPath + shortName + '_'+ svgNum + '.svg', $.html(), () => {
             writeFileFlag(svgNum);
             callback();
           });

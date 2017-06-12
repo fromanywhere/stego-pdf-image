@@ -13,7 +13,7 @@ function convertToPdf(params) {
 	notification.init(params.socketId);
 
 
-  return new Promise(function (resolve, reject) {
+  return new Promise((resolve, reject) => {
 		let filesWrited = [];
 
 		function writeFileFlag(currentPdfNum) {

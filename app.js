@@ -16,8 +16,6 @@ global.jobs = {};
 var routes = require('./routes/index');
 var pdf2svg = require('./routes/pdf2svg');
 var uploadPdf = require('./routes/uploadPdf');
-var svg2pdf = require('./routes/svg2pdf');
-var uploadSvg = require('./routes/uploadSvg');
 var detect = require('./routes/detect');
 var detectPdf = require('./routes/detectPdf');
 
@@ -38,8 +36,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', routes);
 app.use('/pdf2svg', pdf2svg);
 app.use('/uploadPdf', uploadPdf);
-app.use('/svg2pdf', svg2pdf);
-app.use('/uploadSvg', uploadSvg);
 app.use('/detect', detect);
 app.use(haltOnTimedout);
 app.use('/detectPdf', detectPdf);

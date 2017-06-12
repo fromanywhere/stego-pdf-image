@@ -1,42 +1,34 @@
-var express = require('express');
-var router = express.Router();
-var formidable = require('formidable');
-var extend = require('xtend');
-var handlebars = require('handlebars');
-var hbs = require('express-hbs');
+const express = require('express');
+const router = express.Router();
+const formidable = require('formidable');
+const extend = require('xtend');
+const handlebars = require('handlebars');
+const hbs = require('express-hbs');
 
-var notification = require('../modules/notification');
+const notification = require('../modules/notification');
+const convertToSVG = require('../modules/pdf/convertToSVG');
+const uploadImages = require('../modules/pdf/uploadImages');
+const extractImages = require('../modules/pdf/extractImages');
+const convertToPdf = require('../modules/svg/convertToPdf');
+const packFiles = require('../modules/pdf/packFiles');
 
-var convertToSVG = require('../modules/pdf/convertToSVG');
-var uploadImages = require('../modules/pdf/uploadImages');
-var extractImages = require('../modules/pdf/extractImages');
+let CHEERIO_PROCESS_THREADS_NUM = 1;
+let SVG_PROCESS_THREADS_NUM = 8;
 
-var CHEERIO_PROCESS_THREADS_NUM = 1;
-var detectTemplate = " \
-	{{#if similar}} \
-		Измененные символы (разница видна по наведению мыши): <br /><br />\
-		{{#each similar}} \
-			<span class='container-img'> \
-				<img src='{{sourceImgOriginal}}' class='original-img' /> \
-				<img src='{{sourceImgAlter}}' class='alter-img' /> \
-			</span> \
-		{{/each}} \
-	{{else}} \
-		Признаков внедрения не найдено. \
-	{{/if}}";
-var compiledDetectTemplate = handlebars.compile(detectTemplate);
+const downloadTemplate = "<a class='navigationButton' href='{{href}}' download>Скачать</a>";
+const compiledDetectTemplate = handlebars.compile(downloadTemplate);
 
-router.post('/', function(req, res) {
+router.post('/', (req, res) => {
 console.log("post event");
-	var form = new formidable.IncomingForm();
-	var params = {};
+	let form = new formidable.IncomingForm();
+	let params = {};
 
-    form.parse(req, function(err, fields, files) {
+    form.parse(req, (err, fields, files) => {
 
-		var name = files['pdf'].name;
-		var absolutePath = '/uploads/' + name + '_' + Date.now() + '/';
-		var targetPath = appRoot + '/public' + absolutePath;
-		var startTime = Date.now();
+		let name = files['pdf'].name;
+		let absolutePath = '/uploads/' + name + '_' + Date.now() + '/';
+		let targetPath = appRoot + '/public' + absolutePath;
+		let startTime = Date.now();
 
 		params = extend(params, {
 			name: name,
@@ -44,36 +36,43 @@ console.log("post event");
 			absolutePath: absolutePath,
 			targetPath: targetPath,
 			generatePalette: fields.palette || 'false',
-			socketId: fields.socketCookie
+			socketId: fields.socketCookie,
+      svgProcessThreadsNum: SVG_PROCESS_THREADS_NUM
 		});
 
 		notification.init(params.socketId);
 
 		uploadImages(params)
-			.then(function resolveUpload() {
+			.then(() => {
 				return convertToSVG(params);
 			})
-			.then(function resolveConvert(svgs) {
+			.then((svgs) => {
 				params.svg = svgs;
 				params.cheerioProcessThreadsNum = CHEERIO_PROCESS_THREADS_NUM;
-				return extractImages(params);
+				return extractImages(params, 'detect');
 			})
-			.then(function resolveDetect(embedded) {
-				params.embedded = embedded;
-				res.send(compiledDetectTemplate(embedded));
-				notification.log("Детектирование завершено за " + (Date.now()-startTime)/1000 + 'c.');
-			});
+      .then(() => {
+        return convertToPdf(params);
+      })
+      .then(() => {
+        return packFiles(params);
+      })
+      .then((ziplink) => {
+        params.ziplink = ziplink;
+        res.send(compiledDetectTemplate({href: ziplink}));
+        notification.log("Конвертация завершена за " + (Date.now()-startTime)/1000 + 'c.');
+      });
     });
 
 
-	form.on('field', function(name, value) {
+	form.on('field', (name, value) => {
 		if (name === 'socketCookie') {
 			params.socketId = value;
 			notification.init(params.socketId);
 		}
 	});
 
-	form.on('progress', function(bytesReceived, bytesExpected) {
+	form.on('progress', (bytesReceived, bytesExpected) => {
 		notification.log("Загрузка файла... " + ((bytesReceived/bytesExpected)*100).toFixed(2) + "%")
 	});
 });

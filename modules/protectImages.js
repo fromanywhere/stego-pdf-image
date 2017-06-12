@@ -1,25 +1,23 @@
+const fs = require('fs');
 const Canvas = require('canvas');
 const Image = Canvas.Image;
 
-const transformMessage = require('./transformMessage');
-const extractWTM = require('./extractWTM');
 
-function protectImages(imageSrc, imageWidth, imageHeight, params) {
+function protectImages(imageSrc, imgWidth, imgHeight, resultOfTransformMessage, params) {
 
   let image = new Image();
   image.src = imageSrc;
-  let width = parseInt(imageWidth, 10),
-      height = parseInt(imageHeight, 10),
+  let width = parseInt(imgWidth, 10),
+      height = parseInt(imgHeight, 10),
       canvas = new Canvas(width, height),
       imageData, ctx,
       arrRed = [], arrGreen = [], arrBlue = [],
-      binaryMessage, resultOfTransformMessage;
+      binaryMessage;
 
   ctx = canvas.getContext('2d');
   ctx.drawImage(image, 0, 0);
   imageData = ctx.getImageData(0, 0, width, height);
 
-  resultOfTransformMessage = transformMessage();
   binaryMessage = resultOfTransformMessage.binaryMessage;
 
   //exrtract channels
@@ -82,9 +80,8 @@ function protectImages(imageSrc, imageWidth, imageHeight, params) {
     ctx.putImageData(imageData, 0, 0);
     let newImg  = canvas.toDataURL();
 
-    extractWTM(newImg, imageWidth, imageHeight, binaryMessage.length, resultOfTransformMessage.width, params);
-
-    return newImg;
+  fs.writeFileSync(`${params.targetPath}protected${Math.floor(Math.random() * 1000 + 1)}.png`, newImg.replace(/^data:image\/png;base64,/, ""), 'base64');
+  return newImg;
 
 }
 

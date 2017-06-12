@@ -63,7 +63,6 @@
 			xhr.onreadystatechange = function() {
 				if (this.readyState != 4) return;
 				responseHTML.innerHTML = this.responseText;
-				form.style.display = 'none';
 				document.querySelector('body').classList.remove('__loading');
 			}
 

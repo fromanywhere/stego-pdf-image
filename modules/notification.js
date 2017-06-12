@@ -1,5 +1,5 @@
 function Notification() {
-	var socketId = null;
+	let socketId = null;
 
 	return {
 		init: function (sockId) {

@@ -16,15 +16,15 @@ function uploadImages(params) {
 		} else {
 			let tempPath = fileProp.path;
 			let rename = function () {
-				fs.rename(tempPath, params.targetPath + params.name, function () {
+				fs.rename(tempPath, params.targetPath + params.name, () => {
 					notification.log("Обработка PDF-файла...");
 					resolve();
 				});
 			};
 
-				fs.stat(params.targetPath, function (err, stats) {
+				fs.stat(params.targetPath, (err, stats) => {
 					if (err) {
-						fs.mkdir(params.targetPath, function () {
+						fs.mkdir(params.targetPath, () => {
 							rename();
 						});
 					} else {
