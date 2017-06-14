@@ -1,16 +1,16 @@
 function syncProcess(func, threads, currentNum, targetNum, callback) {
 
-	var processes = [];
-	var currentFile = null;
+	let processes = [];
+	let currentFile = null;
 
 	function makeSyncProcess(func, threads, currentNum, targetNum, callback) {
 
 		currentFile = currentFile || currentNum;
 
 		if (currentFile < targetNum) {
-			for (var processCount = processes.length; (processCount < threads) && (currentFile < targetNum); processCount++) {
+			for (let processCount = processes.length; (processCount < threads) && (currentFile < targetNum); processCount++) {
 
-				func(currentFile, function () {
+				func(currentFile, () => {
 					processes.pop();
 					makeSyncProcess(func, threads, currentFile, targetNum, callback);
 				});

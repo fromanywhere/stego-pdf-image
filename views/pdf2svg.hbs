@@ -9,21 +9,32 @@
 			script.defer = true;
 			script.src = '/js/main.js?' + new Date().getTime();
 			document.getElementsByTagName('head')[0].appendChild(script);
+
+            function getFileName () {
+                var file = document.getElementById('upload-file').value;
+                console.log(file);
+                file = file.replace (/\\/g, '/').split ('/').pop ();
+                document.getElementById ('file-name').innerHTML = file;
+            }
 		</script>
 	</head>
 	<body>
 		<div class="wrapper">
 			<h1>Защитить изображения в PDF</h1>
-			<p>Перетащите сюда PDF</p>
-			<p class="back"><a href="/pdf2svg">Повторить загрузку</a></p>
-			<p class="back"><a href="/">Вернуться на главную</a></p>
-			<p class="response"></p>
-
+			<p>Загрузите PDF</p>
+            <div class="response"></div>
 			<div class="upload">
-				<form action="/uploadPdf" method="post" enctype="multipart/form-data">
-					<input type="file" name='pdf' accept=".pdf" />
-				</form>
+                <form action="/detectPdf" method="post" enctype="multipart/form-data">
+                    <div class="navigationButton file-upload">
+                        <label>
+                            <input type="file" name="pdf" accept=".pdf" id="upload-file" onchange="getFileName()">
+                            <span>Выбрать файл</span>
+                        </label>
+                    </div>
+                    <div id="file-name"></div>
+                </form>
 			</div>
+            <a class="navigationButton  back" href="/">Вернуться на главную</a>
 		</div>
 
 		<div class="drop">Загрузить файл</div>

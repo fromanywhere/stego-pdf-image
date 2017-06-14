@@ -1,63 +1,80 @@
-var express = require('express');
-var router = express.Router();
-var formidable = require('formidable');
-var extend = require('xtend');
+const express = require('express');
+const router = express.Router();
+const formidable = require('formidable');
+const extend = require('xtend');
+const handlebars = require('handlebars');
 
-var notification = require('../modules/notification');
-var convertToSVG = require('../modules/pdf/convertToSVG');
-var uploadImages = require('../modules/pdf/uploadImages');
-var extractImages = require('../modules/pdf/extractImages');
+const notification = require('../modules/notification');
+const convertToSVG = require('../modules/pdf/convertToSVG');
+const uploadImages = require('../modules/pdf/uploadImages');
+const extractImages = require('../modules/pdf/extractImages');
+const convertToPdf = require('../modules/svg/convertToPdf');
+const packFiles = require('../modules/pdf/packFiles');
+const cmdExec = require('../modules/cmdExec');
 
-var CHEERIO_PROCESS_THREADS_NUM = 1;
+let CHEERIO_PROCESS_THREADS_NUM = 1;
+let SVG_PROCESS_THREADS_NUM = 8;
 
-router.post('/', function(req, res) {
+const downloadTemplate = "<a class='navigationButton' href='{{href}}' download>Скачать</a>";
+const compiledDownloadTemplate = handlebars.compile(downloadTemplate);
 
-	var form = new formidable.IncomingForm();
-	var params = {};
 
-    form.parse(req, function(err, fields, files) {
+router.post('/', (req, res) => {
 
-		var name = files['pdf'].name;
-		var path = appRoot + '/public/uploads';
-		var absolutePath = '/uploads/' + name + '_' + Date.now() + '/';
-		var targetPath = appRoot + '/public' + absolutePath;
-		var startTime = Date.now();
+	let form = new formidable.IncomingForm();
+	let params = {};
 
-		params = extend(params, {
+    form.parse(req, (err, fields, files) => {
+
+		let name = files['pdf'].name;
+		let path = appRoot + '/public/uploads';
+		let absolutePath = '/uploads/' + name + '_' + Date.now() + '/';
+		let targetPath = appRoot + '/public' + absolutePath;
+		let startTime = Date.now();
+
+      params = extend(params, {
 			name: name,
 			files: files,
 			path: path,
 			absolutePath: absolutePath,
 			targetPath: targetPath,
 			socketId: fields.socketCookie,
-		});
+      svgProcessThreadsNum: SVG_PROCESS_THREADS_NUM
+    });
 
 		notification.init(params.socketId);
 
 		uploadImages(params)
-			.then(function resolveUpload() {
+			.then(() => {
 				return convertToSVG(params);
 			})
-			.then(function resolveConvert(svgs) {
+			.then((svgs) => {
 				params.svg = svgs;
 				params.cheerioProcessThreadsNum = CHEERIO_PROCESS_THREADS_NUM;
-				return extractImages(params);
+				return extractImages(params, 'protect');
 			})
-			.then(function resolvePack(ziplink) {
-				params.ziplink = ziplink;
-				notification.log("Конвертация завершена за " + (Date.now()-startTime)/1000 + 'c.');
-			});
+			.then(() => {
+        return convertToPdf(params);
+			})
+			.then(() => {
+        return packFiles(params);
+			})
+      .then((ziplink) => {
+        params.ziplink = ziplink;
+        res.send(compiledDownloadTemplate({href: ziplink}));
+        notification.log("Конвертация завершена за " + (Date.now()-startTime)/1000 + 'c.');
+      });
     });
 
 
-	form.on('field', function(name, value) {
+	form.on('field', (name, value) => {
 		if (name === 'socketCookie') {
 			params.socketId = value;
 			notification.init(params.socketId);
 		}
 	});
 
-	form.on('progress', function(bytesReceived, bytesExpected) {
+	form.on('progress', (bytesReceived, bytesExpected) => {
 		notification.log("Загрузка файла... " + ((bytesReceived/bytesExpected)*100).toFixed(2) + "%")
 	});
 });

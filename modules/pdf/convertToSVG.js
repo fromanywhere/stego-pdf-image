@@ -1,21 +1,20 @@
-var Promise = require('es6-promise').Promise;
-var path = require('path');
-var fs = require('fs');
+const Promise = require('es6-promise').Promise;
+const path = require('path');
+const fs = require('fs');
 
-var notification = require('../notification');
-var cmdExec = require('../cmdExec');
+const notification = require('../notification');
+const cmdExec = require('../cmdExec');
 
 function convertToSVG(params) {
-	var startTime = Date.now();
+	const startTime = Date.now();
 
 	notification.init(params.socketId);
 
 	return new Promise(function (resolve, reject) {
-		var shortName = path.basename(params.name, '.pdf');
-		var filePath = path.resolve(params.targetPath, params.name);
+		let shortName = path.basename(params.name, '.pdf');
 
 		fs.stat(params.targetPath, () => {
-			var cmd = 'pdf2svg ' + shortName + '.pdf ' + shortName + '_%d.svg all';
+			let cmd = 'pdf2svg ' + shortName + '.pdf ' + shortName + '_%d.svg all';
 
 			cmdExec(cmd, {
 					cwd: params.targetPath

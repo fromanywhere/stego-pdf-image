@@ -1,0 +1,24 @@
+@font-face {
+    font-family: 'Quattrocento Sans';
+    src: local('Quattrocento Sans'), local('QuattrocentoSans'), url('quattrocentosans.woff2') format('woff2'), url('quattrocentosans.woff') format('woff'), url('quattrocentosans.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Quattrocento Sans';
+    src: local('Quattrocento Sans Italic'), local('QuattrocentoSans-Italic'), url('quattrocentosansitalic.woff2') format('woff2'), url('quattrocentosansitalic.woff') format('woff'), url('quattrocentosansitalic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'Quattrocento Sans';
+    src: local('Quattrocento Sans Bold'), local('QuattrocentoSans-Bold'), url('quattrocentosansbold.woff2') format('woff2'), url('quattrocentosansbold.woff') format('woff'), url('quattrocentosansbold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Quattrocento Sans';
+    src: local('Quattrocento Sans Bold Italic'), local('QuattrocentoSans-BoldItalic'), url('quattrocentosansbolditalic.woff2') format('woff2'), url('quattrocentosansbolditalic.woff') format('woff'), url('quattrocentosansbolditalic.ttf') format('truetype');
+    font-weight: 700;
+    font-style: italic;
+}

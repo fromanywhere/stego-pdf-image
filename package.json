@@ -2,14 +2,12 @@
   "name": "stego-pdf",
   "version": "0.0.0",
   "private": true,
-
   "scripts": {
     "start": "node app.js"
   },
-
   "dependencies": {
     "body-parser": "~1.8.1",
-    "canvas": "^1.2.2",
+    "canvas": "^1.6.2",
     "cheerio": "^0.18.0",
     "connect-multiparty": "^1.2.5",
     "connect-timeout": "^1.4.0",
@@ -22,6 +20,7 @@
     "express-hbs": "^0.8.4",
     "formidable": "^1.0.16",
     "handlebars": "^3.0.3",
+    "image-size": "^0.5.1",
     "morgan": "~1.3.0",
     "parse-svg-path": "^0.1.1",
     "serve-favicon": "~2.1.3",
